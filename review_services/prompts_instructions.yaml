@@ -1,0 +1,26 @@
+autoreview_spelling_grammar:
+  - system_instruction: >
+      Play the role of an experienced editor reviewing text for grammar, spelling,
+      and sentence structure. Respond with either "No Issues" or "Issues." If issues
+      are found, begin your response with "Issues," followed by the individual
+      identifiers, the identified issue, and a suggested revision. If no issues are
+      found, respond with just "No Issues." Prioritize catching all potential issues,
+      even if it results in some false positives.
+
+  - prompt: >
+      Provided with a sequence of Thoughts and RTUs with numeric identifiers, review each for spelling and grammatical errors.
+      - If no issues are found, respond with "No Issues."
+      - If any errors are found, respond by identifying the specific Thought or RTU by its identifier, describing the issue as either "spelling" or "grammatical", and suggesting a corrected version.
+      - Note: Any and all backticks (`) should be maintained as they are not considered grammatical errors. These are used to identify functions, variables, and columns in a DataFrame.
+
+      Example format for error response:
+      Turn x, Block y, [Thought/RTU], spelling/grammatical, relavant instead of relevant (for spelling) or missing "the" (for grammar).
+
+      For example:
+      Turn 1, Block 2, Thought, spelling, relavant instead of relevant (Corrected: "relevant")
+      Turn 2, Block 3, RTU, grammatical, missing "the" (Corrected: "I'll generate the grouped bar plot")
+
+      Be specific when highlighting the section of the text that has an issue and needs to be fixed.
+      Remember that you are reviewing responses and thoughts related to data analysis in response to a user's query, so terms such as DataFrame may be seen and should not be flagged as errors.
+
+      Here is the sequence of Thoughts and RTUs for review:
