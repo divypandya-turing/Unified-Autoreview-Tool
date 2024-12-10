@@ -7,4 +7,8 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     level=logging.INFO,
 )
+
+# Suppress specific logging messages from googleapiclient.discovery_cache
+logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
+
 logger = logging.getLogger(__name__)
