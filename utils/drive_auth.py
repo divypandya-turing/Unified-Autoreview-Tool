@@ -15,7 +15,7 @@ def initialize_drive_service():
     """Initialize the Google Drive service."""
     creds = pydata_google_auth.get_user_credentials(
         SCOPES,
-        auth_local_webserver=True,
+        auth_local_webserver=False,
     )
     return build("drive", "v3", credentials=creds)
 
@@ -24,6 +24,6 @@ def initialize_sheets_service():
     """Initialize the Google Sheets service."""
     creds = pydata_google_auth.get_user_credentials(
         SCOPES,
-        auth_local_webserver=True,
+        auth_local_webserver=False,
     )
     return build("sheets", "v4", credentials=creds)
