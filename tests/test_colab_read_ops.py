@@ -1,3 +1,4 @@
+"""Test cases for colab_read_ops.py."""
 import unittest
 from unittest.mock import patch
 
@@ -26,10 +27,10 @@ class TestColabReadOps(unittest.TestCase):
             self.assertEqual(sft_type, expected_sft_type)
             self.assertEqual(is_stepwise, expected_is_stepwise)
 
-    @patch("utils.colab_read_ops.DRIVE_SERVICE")
+    @patch("utils.colab_read_ops.initialize_drive_service")
     def test_get_colabs(self, mock_drive_service):
         """Test the get_colabs function."""
-        mock_drive_service.files.return_value.list.return_value.execute.side_effect = [
+        mock_drive_service().files.return_value.list.return_value.execute.side_effect = [
             {
                 "files": [
                     {"id": "folder1", "name": "Subfolder1", "mimeType": "application/vnd.google-apps.folder"},
@@ -52,10 +53,10 @@ class TestColabReadOps(unittest.TestCase):
         colabs = sorted(get_colabs("root_folder", "Root Folder"), key=lambda x: x["id"])
         self.assertEqual(colabs, expected_colabs)
 
-    @patch("utils.colab_read_ops.DRIVE_SERVICE")
+    @patch("utils.colab_read_ops.initialize_drive_service")
     def test_get_colabs_ignores_folders(self, mock_drive_service):
         """Test the get_colabs function ignores folders in FOLDERS_TO_IGNORE."""
-        mock_drive_service.files.return_value.list.return_value.execute.return_value = {
+        mock_drive_service().files.return_value.list.return_value.execute.return_value = {
             "files": [
                 {"id": "folder1", "name": FOLDERS_TO_IGNORE[0], "mimeType": "application/vnd.google-apps.folder"},
             ]
@@ -64,10 +65,10 @@ class TestColabReadOps(unittest.TestCase):
 
         self.assertEqual(colabs, [])  # Expect empty list as the folder should be ignored
 
-    @patch("utils.colab_read_ops.DRIVE_SERVICE")
+    @patch("utils.colab_read_ops.initialize_drive_service")
     def test_get_colabs_inherits_sft_type(self, mock_drive_service):
         """Test the get_colabs function inherits SFT type from parent folder."""
-        mock_drive_service.files.return_value.list.return_value.execute.side_effect = [
+        mock_drive_service().files.return_value.list.return_value.execute.side_effect = [
             {
                 "files": [
                     {"id": "folder1", "name": "Subfolder With_File", "mimeType": "application/vnd.google-apps.folder"},
