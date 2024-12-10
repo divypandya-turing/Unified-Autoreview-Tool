@@ -4,7 +4,7 @@ import re
 from typing import Optional
 
 from review_services.sft_validator.block_validations import BaseBlockValidators
-from utils import DRIVE_SERVICE, FILE_METADATA_SUB_TAGS, OPTIONAL_FILE_METADATA_SUB_TAGS, logger
+from utils import FILE_METADATA_SUB_TAGS, OPTIONAL_FILE_METADATA_SUB_TAGS, initialize_drive_service, logger
 
 
 class ICEFileMetadataValidators(BaseBlockValidators):
@@ -84,7 +84,8 @@ class ICEFileMetadataValidators(BaseBlockValidators):
         """Retrieve the filename from Google Drive using the file ID."""
 
         try:
-            file_metadata = DRIVE_SERVICE.files().get(fileId=file_id, fields="name").execute()  # noqa
+            drive_service = initialize_drive_service()
+            file_metadata = drive_service.files().get(fileId=file_id, fields="name").execute()  # noqa
             return file_metadata.get("name")
         except Exception as e:
             logger.error(f"An error occurred: {e}")

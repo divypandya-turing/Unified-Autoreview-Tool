@@ -5,7 +5,7 @@ import json
 
 import nbformat
 
-from utils import DRIVE_SERVICE, logger
+from utils import initialize_drive_service, logger
 
 
 def create_a_plan_from_colab_notebook(nb: nbformat.NotebookNode) -> list[tuple[str, str]]:
@@ -71,13 +71,14 @@ def create_a_plan_from_drive_notebook(file_id: str):
     """
     try:
         # Fetch the file metadata to determine the MIME type and name
-        file_metadata = DRIVE_SERVICE.files().get(fileId=file_id, fields="name, mimeType").execute()  # noqa
+        drive_service = initialize_drive_service()
+        file_metadata = drive_service.files().get(fileId=file_id, fields="name, mimeType").execute()  # noqa
         file_name, mime_type = file_metadata["name"], file_metadata["mimeType"]
 
         # Only process if it's not a folder
         if mime_type != "application/vnd.google-apps.folder":
             # Download the file content
-            file_content = DRIVE_SERVICE.files().get_media(fileId=file_id).execute()  # noqa
+            file_content = drive_service.files().get_media(fileId=file_id).execute()  # noqa
 
             # Try to load notebook into nbformat
             try:

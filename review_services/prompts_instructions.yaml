@@ -12,13 +12,15 @@ autoreview_spelling_grammar:
       - If no issues are found, respond with "No Issues."
       - If any errors are found, respond by identifying the specific Thought or RTU by its identifier, describing the issue as either "spelling" or "grammatical", and suggesting a corrected version.
       - Note: Any and all backticks (`) should be maintained as they are not considered grammatical errors. These are used to identify functions, variables, and columns in a DataFrame.
+      - Separate each issue with exactly two line breaks.
 
       Example format for error response:
-      Turn x, Block y, [Thought/RTU], spelling/grammatical, relavant instead of relevant (for spelling) or missing "the" (for grammar).
+      Turn x, Block y, [THOUGHT:/RESPONSE_TO_USER:], spelling/grammatical, relavant instead of relevant (for spelling) or missing "the" (for grammar).
 
       For example:
-      Turn 1, Block 2, Thought, spelling, relavant instead of relevant (Corrected: "relevant")
-      Turn 2, Block 3, RTU, grammatical, missing "the" (Corrected: "I'll generate the grouped bar plot")
+      Turn 1, Block 2, [THOUGHT:], spelling, relavant instead of relevant (Corrected: "relevant")
+
+      Turn 2, Block 3, [RESPONSE_TO_USER:], grammatical, missing "the" (Corrected: "I'll generate the grouped bar plot")
 
       Be specific when highlighting the section of the text that has an issue and needs to be fixed.
       Remember that you are reviewing responses and thoughts related to data analysis in response to a user's query, so terms such as DataFrame may be seen and should not be flagged as errors.

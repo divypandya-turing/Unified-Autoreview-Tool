@@ -6,5 +6,5 @@ from .const import FILE_METADATA_SUB_TAGS  # noqa
 from .const import FOLDERS_TO_IGNORE  # noqa
 from .const import OPTIONAL_FILE_METADATA_SUB_TAGS  # noqa
 from .const import Status  # noqa
-from .drive_auth import DRIVE_SERVICE, SHEETS_SERVICE  # noqa
+from .drive_auth import initialize_drive_service, initialize_sheets_service  # noqa
 from .logger import logger  # noqa

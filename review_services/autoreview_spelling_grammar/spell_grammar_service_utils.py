@@ -43,6 +43,7 @@ def query_endpoint(
         method = "streamGenerateContent" if stream else "generateContent"
 
         request["bardConfig"] = {}
+
         response = requests.post(
             f"{AutoReview.URL}/v1beta/{model}:{method}?key={AutoReview.API_KEY}",
             json=request,
@@ -50,9 +51,9 @@ def query_endpoint(
                 "Content-Type": "application/json",
             },
             timeout=1000,
-            verify=False,
         )
         response.raise_for_status()
+        logger.info("Status Code: %s", response.status_code)
         return response.json()
 
     except requests.exceptions.HTTPError as e:

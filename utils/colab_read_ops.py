@@ -1,7 +1,7 @@
 """This contains functions to read colabs."""
 
 from utils.const import FOLDERS_TO_IGNORE
-from utils.drive_auth import DRIVE_SERVICE
+from utils.drive_auth import initialize_drive_service
 from utils.logger import logger
 
 
@@ -59,6 +59,7 @@ def get_colabs(folder_id: str, descriptive_name: str, filter_key_words: list = [
         List of colabs with SFT type and stepwise info
     """
     all_colab_folder_items = []
+    drive_service = initialize_drive_service()
 
     def traverse_folders(folder_id: str, folder_name: str, parent_sft_type: str):
         """Helper function to recursively traverse through subfolders,
@@ -77,7 +78,7 @@ def get_colabs(folder_id: str, descriptive_name: str, filter_key_words: list = [
         page_token: str = None
         while True:
             results = (
-                DRIVE_SERVICE.files()
+                drive_service.files()
                 .list(q=query, fields="nextPageToken, files(id, name, mimeType)", pageToken=page_token)
                 .execute()
             )

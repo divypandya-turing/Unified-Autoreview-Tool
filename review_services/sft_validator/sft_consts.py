@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from utils import SHEETS_SERVICE
+from utils import initialize_sheets_service
 
 
 class OnlineSFTCodeErrors:
@@ -36,8 +36,9 @@ class OnlineSFTCodeErrors:
         res_df = None
         if res_df is None:
             spreadsheet_id, sheet_name = "1-zQEB5kgQ9ydCskdhvTPGW0YfZD0qb3bkkSKZNItP8Q", "09/06"
+            sheet_service = initialize_sheets_service()
             vals = (
-                SHEETS_SERVICE.spreadsheets()
+                sheet_service.spreadsheets()
                 .values()
                 .get(spreadsheetId=spreadsheet_id, range=sheet_name)
                 .execute()

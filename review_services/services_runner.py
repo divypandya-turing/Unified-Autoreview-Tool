@@ -35,8 +35,6 @@ class ServicesRunner:
 
     def run_services(
         self,
-        file_progress_bar: DeltaGenerator,
-        file_eta_placeholder: DeltaGenerator,
         services_progress_bar: DeltaGenerator,
         services_eta_placeholder: DeltaGenerator,
     ) -> tuple[pd.DataFrame, float]:
@@ -44,12 +42,6 @@ class ServicesRunner:
 
         Parameters
         ----------
-        file_progress_bar : DeltaGenerator
-            Streamlit progress bar for file processing.
-
-        file_eta_placeholder : DeltaGenerator
-            Streamlit placeholder for file ETA.
-
         services_progress_bar : DeltaGenerator
             Streamlit progress bar for services processing.
 
@@ -74,60 +66,38 @@ class ServicesRunner:
         # Start time
         start_time = time.time()
 
-        colabs = []
-
-        completed_files = 0  # Counter for processed files
-        for file in self.__files:
-            colabs.append(Colab(file))
-            # Update progress and ETA
-            completed_files += 1
-            progress = completed_files / total_files
-            file_progress_bar.progress(progress)
-            elapsed_time = time.time() - start_time
-            avg_time_per_file = elapsed_time / completed_files
-            remaining_time = avg_time_per_file * (total_files - completed_files)
-            file_eta_placeholder.text(
-                f"[File Processing] Estimated time remaining: {self.__format_time(remaining_time)}"
-            )
-
-        # Clear the ETA placeholder and progress bar after completion
-        self.__clear_placeholders(file_eta_placeholder, file_progress_bar)
-
-        completed_tasks = 0  # Counter for processed tasks
-
         # Run validators in parallel for each file
         with ThreadPoolExecutor() as executor:
             future_to_file = {
-                executor.submit(validator, colab): (colab, validator_name)
-                for colab in colabs
+                executor.submit(validator, file): (file, validator_name)
+                for file in self.__files
                 for validator_name, validator in self.__validators.items()
             }
 
             for future in as_completed(future_to_file):
-                colab, validator_name = future_to_file[future]
+                file, validator_name = future_to_file[future]
                 try:
                     result: Colab = future.result()
                     result.colab_res.update({"validator": validator_name})
                     # Collect the result
                     results.append(result.colab_res)
+                    del result
                 except Exception as e:
                     # Handle any exceptions during validation
                     error_details = traceback.format_exc()
                     logger.error(
-                        f"[Running Validations] Error processing file {colab.file_name} with {validator_name}: {error_details}"
+                        f"[Running Validations] Error processing file {file['name']}"
+                        f"with {validator_name}: {error_details}"
                     )
                     results.append(
                         {
-                            "colab_name": colab.file_name,
-                            "colab_url": colab.colab_url,
+                            "colab_name": file["name"],
+                            "colab_url": None,
                             "validator": validator_name,
                             "errors": [[None, None, str(e)]],
                             "status": Status.FAILED,
                         }
                     )
-
-                finally:
-                    del colab  # Delete the colab object to free up memory
 
                 # Update progress and ETA
                 completed_tasks += 1
@@ -180,11 +150,16 @@ class ServicesRunner:
                 "Status": result["status"],
             }
 
+            if result.get("errors") is None:
+                row["Turn Number"], row["Block Number"], row["Error"] = None, None, None
+                formatted_results.append(row.copy())
+                continue
+
             for error in result.get("errors", []):
                 row["Turn Number"], row["Block Number"], row["Error"] = error
                 formatted_results.append(row.copy())
 
-        df = pd.DataFrame(formatted_results).sort_values(["Turn Number", "Block Number"], na_position="last")
+        df = pd.DataFrame(formatted_results).sort_values(["Turn Number", "Block Number"], na_position="first")
 
         def aggregate_errors(group: pd.DataFrame) -> str:
             """Aggregates errors for a single group of Turn Numbers.
@@ -200,13 +175,15 @@ class ServicesRunner:
                 Aggregated errors as a formatted string.
             """
             if group.empty:
-                return ""
+                return None
 
             result = []
             for i, (_, row) in enumerate(group.iterrows(), start=1):
+                if row["Error"] is None:
+                    continue
                 err_str = f"{i}. [{row['Validator']}] "
                 if pd.notna(row["Block Number"]):
-                    err_str += f"Block {row['Block Number']}: "
+                    err_str += f"Block {int(row['Block Number'])}: "
                 err_str += row["Error"]
                 result.append(err_str)
 
@@ -226,23 +203,24 @@ class ServicesRunner:
                 Aggregated errors and the final status.
             """
             if group.empty:
-                return pd.Series({"Errors": "", "Final Status": ""})
+                return pd.Series({"Errors": None, "Status": Status.PASSED})
 
             result = []
             for _, row in group.iterrows():
                 if pd.isna(row["Turn Number"]):
                     err_str = row["Errors"]
                 else:
-                    err_str = f"Turn {row['Turn Number']}:\n{row['Errors']}"
+                    err_str = f"Turn {int(row['Turn Number'])}:\n{row['Errors']}"
                 result.append(err_str)
 
+            result = [err for err in result if err != ""]
             errors = "\n".join(result)
-            final_status = "Failed" if any(group["Status"] == "Failed") else "Passed"
+            final_status = "Failed" if any(group["Status"] == Status.FAILED) else Status.PASSED
             return pd.Series({"Errors": errors, "Status": final_status})
 
         # Aggregate errors for each group of Turn Numbers
         grouped_df = (
-            df.groupby(["Colab Name", "Colab URL", "Turn Number", "Status"])
+            df.groupby(["Colab Name", "Colab URL", "Turn Number", "Status"], dropna=False, sort=False)
             .apply(aggregate_errors)
             .reset_index(name="Errors")
         )

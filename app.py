@@ -47,8 +47,6 @@ def main():
     if validate_button:
         if folder_id:  # Assume a valid folder ID is entered
             results_df, pass_rate = ServicesRunner(folder_id).run_services(
-                file_progress_bar=st.progress(0),
-                file_eta_placeholder=st.empty(),
                 services_progress_bar=st.progress(0),
                 services_eta_placeholder=st.empty(),
             )

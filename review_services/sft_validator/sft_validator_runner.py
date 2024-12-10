@@ -6,19 +6,20 @@ from review_services.sft_validator.turn_validations import TurnValidators
 from utils import Status
 
 
-def sft_validator(colab: Colab) -> Colab:
+def sft_validator(file_info: dict[str, str]) -> Colab:
     """Function to process a single Colab file.
 
     Parameters
     ----------
-    colab : Colab
-        Colab object containing the Colab name, URL, and parsed Colab.
+    file_info : dict[str, str]
+        Dictionary containing the file information
 
     Returns
     -------
     Colab
         Colab object containing the Colab name, URL, and errors (if any).
     """
+    colab: Colab = Colab(file_info)
     if colab.parsed_colab is None:
         colab.colab_res["errors"] = None
         colab.colab_res["status"] = "colab parsing failed"
@@ -37,7 +38,8 @@ def sft_validator(colab: Colab) -> Colab:
             [
                 None,
                 None,
-                f"The colab has {colab.parsed_colab.num_code_errors} code error but missing from the code error tracker.",
+                f"The colab has {colab.parsed_colab.num_code_errors}"
+                "code error but missing from the code error tracker.",
             ]
         )
 
