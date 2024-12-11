@@ -206,7 +206,7 @@ class TurnValidators:
                 failed_checks.append(
                     self.__msg
                     + [
-                        block.serial_number,
+                        last_block.serial_number,
                         "SEQUENCE_MISMATCH: Expected last block to be 'RESPONSE_TO_USER: or CODE_OUTPUT:'"
                         f" but got '{last_block.original_tag}'",
                     ]
@@ -217,7 +217,7 @@ class TurnValidators:
             failed_checks.append(
                 self.__msg
                 + [
-                    block.serial_number,
+                    last_block.serial_number,
                     "SEQUENCE_MISMATCH: Expected last block to be 'RESPONSE_TO_USER:'"
                     f" but got '{last_block.original_tag}'",
                 ]

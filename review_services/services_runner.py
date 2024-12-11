@@ -7,16 +7,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 from streamlit.delta_generator import DeltaGenerator
 
-from review_services.autoreview_spelling_grammar import spell_grammar_autoreview
 from review_services.colab import Colab
-from review_services.sft_validator import sft_validator
+from review_services.services_list import VALIDATOR_LIST
 from utils import Status, get_colabs, logger
 
 
 class ServicesRunner:
     """This class runs all the services on provided Folder."""
 
-    def __init__(self, folder_id: str, folder_name: str = "Root Folder"):
+    def __init__(self, folder_id: str, selected_validators: list[str], folder_name: str = "Root Folder"):
         """Initializes the ServicesRunner class.
 
         Parameters
@@ -28,10 +27,7 @@ class ServicesRunner:
             Folder name, by default "Root Folder"
         """
         self.__files: list[dict[str, str]] = get_colabs(folder_id, folder_name)
-        self.__validators: dict[str, callable[[dict[str, str]], Colab]] = {
-            "SFT Validator": sft_validator,
-            "AutoReview Spelling and Grammar": spell_grammar_autoreview,
-        }
+        self.__validators = {name: func for name, func in VALIDATOR_LIST.items() if name in selected_validators}
 
     def run_services(
         self,
@@ -53,6 +49,7 @@ class ServicesRunner:
         tuple[pd.DataFrame, float]
             Tuple containing the final results and pass rate
         """
+        logger.info(f"Running {len(self.__validators)} validators on {len(self.__files)} files.")
         # Total number of tasks
         total_files = len(self.__files)  # Total number of files
         total_tasks = total_files * len(self.__validators)
@@ -119,6 +116,12 @@ class ServicesRunner:
 
         # Calculate pass rate
         pass_rate = results_df["Status"].value_counts(normalize=True).get("Passed", 0) * 100
+
+        end_time = time.time()
+        logger.info(
+            f"Services completed in {self.__format_time(end_time - start_time)} "
+            f"with average time per task: {avg_time_per_task:.2f} seconds."
+        )
 
         return results_df, pass_rate
 

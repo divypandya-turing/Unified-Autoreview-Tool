@@ -5,7 +5,7 @@ import pandas as pd  # noqa: E0401
 import streamlit as st  # noqa: E0401
 from streamlit.delta_generator import DeltaGenerator  # noqa: E0401
 
-from review_services import ServicesRunner
+from review_services import VALIDATOR_LIST, ServicesRunner  # noqa: E0401
 
 
 def main():
@@ -22,8 +22,18 @@ def main():
 
         with left_col:
             # Folder ID Input with reduced spacing
-            st.markdown("<h4 style='margin-bottom:0;'>Folder ID</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='margin-bottom:0;'>Folder / File ID</h4>", unsafe_allow_html=True)
             folder_id = st.text_input("", placeholder="Enter Folder ID", key="folder_id")
+
+            # Scrollable List of Validators
+            st.markdown("<h4 style='margin-top:20px;'>Select Validators</h4>", unsafe_allow_html=True)
+            validators = list(VALIDATOR_LIST.keys())
+            selected_validators = st.multiselect(
+                "",
+                validators,
+                default=validators,  # Select all validators by default
+                key="validators",
+            )
             validate_button = st.button("Validate", use_container_width=True)
 
         with right_col:
@@ -46,12 +56,16 @@ def main():
     # Perform Validation on Button Click
     if validate_button:
         if folder_id:  # Assume a valid folder ID is entered
-            results_df, pass_rate = ServicesRunner(folder_id).run_services(
-                services_progress_bar=st.progress(0),
-                services_eta_placeholder=st.empty(),
-            )
-            draw_donut_chart(pass_rate, pass_rate_placeholder)
-            display_results(results_table_placeholder, results_df)
+            if not selected_validators:
+                st.error("Please select at least one validator.")
+
+            else:
+                results_df, pass_rate = ServicesRunner(folder_id, selected_validators).run_services(
+                    services_progress_bar=st.progress(0),
+                    services_eta_placeholder=st.empty(),
+                )
+                draw_donut_chart(pass_rate, pass_rate_placeholder)
+                display_results(results_table_placeholder, results_df)
 
         else:
             st.error("Please enter a valid Folder ID.")

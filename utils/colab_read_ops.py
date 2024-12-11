@@ -5,13 +5,13 @@ from utils.drive_auth import initialize_drive_service
 from utils.logger import logger
 
 
-def get_sft_and_stepwise_info(folder_name: str) -> tuple[str, bool]:
+def get_sft_and_stepwise_info(name: str) -> tuple[str, bool]:
     """Function to discern SFT type of the folder and if it is step-wise
 
     Parameters
     ----------
-    folder_name : str
-        folder name
+    name : str
+        Name of folder or file
 
     Returns
     -------
@@ -20,22 +20,22 @@ def get_sft_and_stepwise_info(folder_name: str) -> tuple[str, bool]:
     """
     sft_type = "other"
 
-    if "With_File" in folder_name:
+    if "With_File" in name:
         sft_type = "file"
-    elif "No_File" in folder_name:
+    elif "No_File" in name:
         sft_type = "no_file"
-    elif "PDF" in folder_name:
+    elif "PDF" in name:
         sft_type = "pdf"
-    elif "Search" in folder_name:
+    elif "Search" in name:
         sft_type = "search"
-    elif "Browse" in folder_name:
+    elif "Browse" in name:
         sft_type = "browse"
-    elif "Reasoning" in folder_name:
+    elif "Reasoning" in name:
         sft_type = "reasoning"
-    elif "Marketing" in folder_name:
+    elif "Marketing" in name:
         sft_type = "marketing"
 
-    is_stepwise = "Stepwise" in folder_name
+    is_stepwise = "Stepwise" in name
 
     return sft_type, is_stepwise
 
@@ -99,7 +99,18 @@ def get_colabs(folder_id: str, descriptive_name: str, filter_key_words: list = [
                 break
 
     # Start traversal from the root folder, initially setting sft_type to "other"
-    traverse_folders(folder_id, descriptive_name, "other")
+    # traverse_folders(folder_id, descriptive_name, "other")
+    # Check if the provided ID is a file or a folder
+    file_metadata = drive_service.files().get(fileId=folder_id, fields="id, name, mimeType").execute()
+    if file_metadata["mimeType"] == "application/vnd.google-apps.folder":
+        # Start traversal from the root folder, initially setting sft_type to "other"
+        traverse_folders(folder_id, descriptive_name, "other")
+    elif file_metadata["mimeType"] in ["application/vnd.google.colab", "application/vnd.google.colaboratory"]:
+        # Directly add the file to the list if it's a colab notebook
+        sft_type, is_stepwise = get_sft_and_stepwise_info(file_metadata["name"])
+        all_colab_folder_items.append(
+            {"id": file_metadata["id"], "name": file_metadata["name"], "sft_type": sft_type, "is_stepwise": is_stepwise}
+        )
 
     # Filter the items based on the filter keywords
     selected_colab_folder_items = list(
@@ -110,8 +121,8 @@ def get_colabs(folder_id: str, descriptive_name: str, filter_key_words: list = [
     )
 
     logger.info(
-        f"Selected {len(selected_colab_folder_items)} colabs from\
-        {descriptive_name} folder: https://drive.google.com/drive/folders/{folder_id}"
+        f"Selected {len(selected_colab_folder_items)} colabs from"
+        f" {descriptive_name} folder: https://drive.google.com/drive/folders/{folder_id}"
     )
 
     return selected_colab_folder_items
