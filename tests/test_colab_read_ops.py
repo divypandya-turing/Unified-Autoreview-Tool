@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch
 
-from utils.colab_read_ops import get_colabs, get_sft_and_stepwise_info
+from utils import get_colabs, get_sft_and_stepwise_info
 from utils.const import FOLDERS_TO_IGNORE
 
 
@@ -28,19 +28,25 @@ class TestColabReadOps(unittest.TestCase):
             self.assertEqual(is_stepwise, expected_is_stepwise)
 
     @patch("utils.colab_read_ops.initialize_drive_service")
-    def test_get_colabs(self, mock_drive_service):
+    def test_get_colabs(self, mock_initialize_drive_service):
         """Test the get_colabs function."""
-        mock_drive_service().files.return_value.list.return_value.execute.side_effect = [
+        mock_drive_service = mock_initialize_drive_service.return_value
+        mock_drive_service.files.return_value.get.return_value.execute.return_value = {
+            "id": "root_folder",
+            "name": "Root Folder",
+            "mimeType": "application/vnd.google-apps.folder",
+        }
+        mock_drive_service.files.return_value.list.return_value.execute.side_effect = [
             {
                 "files": [
                     {"id": "folder1", "name": "Subfolder1", "mimeType": "application/vnd.google-apps.folder"},
-                    {"id": "file1", "name": "File1.ipynb", "mimeType": "application/vnd.google-apps.notebook"},
+                    {"id": "file1", "name": "File1.ipynb", "mimeType": "application/vnd.google.colab"},
                 ]
             },
             {
                 "files": [
-                    {"id": "file2", "name": "TODO File2.ipynb", "mimeType": "application/vnd.google-apps.notebook"},
-                    {"id": "file3", "name": "File3.ipynb", "mimeType": "application/vnd.google-apps.notebook"},
+                    {"id": "file2", "name": "TODO File2.ipynb", "mimeType": "application/vnd.google.colab"},
+                    {"id": "file3", "name": "File3.ipynb", "mimeType": "application/vnd.google.colab"},
                 ]
             },
             {},
@@ -50,7 +56,38 @@ class TestColabReadOps(unittest.TestCase):
             {"id": "file1", "name": "File1.ipynb", "sft_type": "other", "is_stepwise": False},
             {"id": "file3", "name": "File3.ipynb", "sft_type": "other", "is_stepwise": False},
         ]
-        colabs = sorted(get_colabs("root_folder", "Root Folder"), key=lambda x: x["id"])
+        colabs = sorted(get_colabs("root_folder", "Root Folder", ["TODO"]), key=lambda x: x["id"])
+        self.assertEqual(colabs, expected_colabs)
+
+    @patch("utils.colab_read_ops.initialize_drive_service")
+    def test_get_colabs_inherits_sft_type(self, mock_initialize_drive_service):
+        """Test the get_colabs function with inherited sft_type."""
+        mock_drive_service = mock_initialize_drive_service.return_value
+        mock_drive_service.files.return_value.get.return_value.execute.return_value = {
+            "id": "root_folder",
+            "name": "Root Folder",
+            "mimeType": "application/vnd.google-apps.folder",
+        }
+        mock_drive_service.files.return_value.list.return_value.execute.side_effect = [
+            {
+                "files": [
+                    {"id": "folder1", "name": "Subfolder1", "mimeType": "application/vnd.google-apps.folder"},
+                    {"id": "file1", "name": "File1.ipynb", "mimeType": "application/vnd.google.colab"},
+                ]
+            },
+            {
+                "files": [
+                    {"id": "file2", "name": "File2.ipynb", "mimeType": "application/vnd.google.colab"},
+                ]
+            },
+            {},
+        ]
+
+        expected_colabs = [
+            {"id": "file1", "name": "File1.ipynb", "sft_type": "other", "is_stepwise": False},
+            {"id": "file2", "name": "File2.ipynb", "sft_type": "other", "is_stepwise": False},
+        ]
+        colabs = sorted(get_colabs("root_folder", "Root Folder", []), key=lambda x: x["id"])
         self.assertEqual(colabs, expected_colabs)
 
     @patch("utils.colab_read_ops.initialize_drive_service")
@@ -65,25 +102,6 @@ class TestColabReadOps(unittest.TestCase):
 
         self.assertEqual(colabs, [])  # Expect empty list as the folder should be ignored
 
-    @patch("utils.colab_read_ops.initialize_drive_service")
-    def test_get_colabs_inherits_sft_type(self, mock_drive_service):
-        """Test the get_colabs function inherits SFT type from parent folder."""
-        mock_drive_service().files.return_value.list.return_value.execute.side_effect = [
-            {
-                "files": [
-                    {"id": "folder1", "name": "Subfolder With_File", "mimeType": "application/vnd.google-apps.folder"},
-                ]
-            },
-            {
-                "files": [
-                    {"id": "file1", "name": "File1.ipynb", "mimeType": "application/vnd.google-apps.notebook"},
-                ]
-            },
-            {},
-        ]
 
-        expected_colabs = [
-            {"id": "file1", "name": "File1.ipynb", "sft_type": "file", "is_stepwise": False},
-        ]
-        colabs = get_colabs("root_folder", "Root Folder")
-        self.assertEqual(colabs, expected_colabs)
+if __name__ == "__main__":
+    unittest.main()
